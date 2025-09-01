@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Genspark RTL Toolbox",
+  "version": "2.3",
+  "description": "תוסף לתמיכה בעברית ו-RTL באתר Genspark.ai עם יכולות הורדת שיחות",
+
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "https://*.genspark.ai/*",
+    "https://genspark.ai/*"
+  ],
+
+  "content_scripts": [{
+    "matches": ["https://*.genspark.ai/*", "https://genspark.ai/*"],
+    "js": ["content.js"],
+    "css": ["rtl-styles.css"],
+    "run_at": "document_end"
+  }],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Genspark RTL Toolbox"
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png", 
+    "128": "icon128.png"
+  }
+}
