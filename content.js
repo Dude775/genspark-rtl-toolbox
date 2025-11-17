@@ -7,7 +7,6 @@ class GensparkRTLToolbox {
     constructor() {
         this.isInitialized = false;
         this.conversations = [];
-        this.rtlEnabled = true;
 
         // סלקטורים מתוקנים עבור Genspark
         this.selectors = {
@@ -75,7 +74,7 @@ class GensparkRTLToolbox {
     async init() {
         if (this.isInitialized) return;
 
-        console.log('🚀 Genspark RTL Toolbox v2.3 מתחיל...');
+        console.log('🚀 Genspark Download Toolbox v2.3 מתחיל...');
 
         // המתן לטעינת הדף
         if (document.readyState === 'loading') {
@@ -88,37 +87,11 @@ class GensparkRTLToolbox {
     }
 
     setup() {
-        this.applyRTLStyles();
         this.addDownloadButton();
         this.setupMessageListeners();
         this.observeChanges();
 
-        // הוסף ping handler
-        this.setupPingHandler();
-
-        console.log('✅ Genspark RTL Toolbox v2.3 הופעל בהצלחה');
-    }
-
-    setupPingHandler() {
-        // מאזין לבדיקות חיבור מהפופאפ
-        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-            if (request.action === 'ping') {
-                sendResponse({ status: 'active', version: '2.3' });
-                return true;
-            }
-
-            if (request.action === 'download') {
-                this.downloadConversation(request.format || 'both');
-                sendResponse({ success: true });
-                return true;
-            }
-
-            if (request.action === 'toggleRTL') {
-                this.toggleRTL();
-                sendResponse({ rtlEnabled: this.rtlEnabled });
-                return true;
-            }
-        });
+        console.log('✅ Genspark Download Toolbox v2.3 הופעל בהצלחה');
     }
 
     // זיהוי הודעות עם סלקטורים מרובים
@@ -391,29 +364,85 @@ class GensparkRTLToolbox {
         document.body.appendChild(button);
     }
 
-    // החלת סגנונות RTL
-    applyRTLStyles() {
-        if (!this.rtlEnabled) return;
-
-        // הוסף מחלקת RTL לגוף הדף
-        document.documentElement.classList.add('genspark-rtl-enabled');
-
-        console.log('✅ סגנונות RTL הופעלו');
-    }
-
-    toggleRTL() {
-        this.rtlEnabled = !this.rtlEnabled;
-
-        if (this.rtlEnabled) {
-            document.documentElement.classList.add('genspark-rtl-enabled');
-        } else {
-            document.documentElement.classList.remove('genspark-rtl-enabled');
+    // חיפוש בשיחות
+    searchConversation(query) {
+        if (!query || query.trim() === '') {
+            return [];
         }
 
-        // שמור הגדרה
-        chrome.storage.sync.set({ rtlEnabled: this.rtlEnabled });
+        const conversations = this.extractConversation();
+        const searchQuery = query.toLowerCase().trim();
+        const results = [];
 
-        console.log(`RTL ${this.rtlEnabled ? 'הופעל' : 'הושבת'}`);
+        conversations.forEach((msg, index) => {
+            const content = msg.content.toLowerCase();
+
+            if (content.includes(searchQuery)) {
+                // מצא את המיקום של המילה
+                const startIndex = content.indexOf(searchQuery);
+
+                // קח קטע מסביב למילה (50 תווים לפני ואחרי)
+                const start = Math.max(0, startIndex - 50);
+                const end = Math.min(msg.content.length, startIndex + searchQuery.length + 50);
+                let snippet = msg.content.substring(start, end);
+
+                // הוסף ... אם יש עוד טקסט
+                if (start > 0) snippet = '...' + snippet;
+                if (end < msg.content.length) snippet = snippet + '...';
+
+                results.push({
+                    index: index,
+                    type: msg.type,
+                    content: msg.content,
+                    snippet: snippet,
+                    matchPosition: startIndex
+                });
+            }
+        });
+
+        console.log(`🔍 נמצאו ${results.length} תוצאות עבור: "${query}"`);
+        return results;
+    }
+
+    // הדגשת הודעה בדף
+    highlightMessage(messageIndex) {
+        const conversations = this.extractConversation();
+
+        if (messageIndex < 0 || messageIndex >= conversations.length) {
+            console.error('אינדקס הודעה לא תקין:', messageIndex);
+            return;
+        }
+
+        const message = conversations[messageIndex];
+
+        // מצא את האלמנט המתאים בדף
+        const allMessages = [
+            ...this.findElements(this.selectors.userMessage),
+            ...this.findElements(this.selectors.assistantMessage)
+        ];
+
+        // מיין לפי סדר בדף
+        const sortedMessages = allMessages.sort((a, b) => {
+            return this.getElementOrder(a) - this.getElementOrder(b);
+        });
+
+        if (sortedMessages[messageIndex]) {
+            const element = sortedMessages[messageIndex];
+
+            // גלול אל ההודעה
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // הוסף הדגשה זמנית
+            element.style.transition = 'background-color 0.3s';
+            const originalBg = element.style.backgroundColor;
+            element.style.backgroundColor = '#fff3cd';
+
+            setTimeout(() => {
+                element.style.backgroundColor = originalBg;
+            }, 2000);
+
+            console.log('✅ הודעה הודגשה בהצלחה');
+        }
     }
 
     // מאזין לשינויים בדף
@@ -458,17 +487,24 @@ class GensparkRTLToolbox {
                     sendResponse({ success: true });
                     break;
 
-                case 'toggleRTL':
-                    this.toggleRTL();
-                    sendResponse({ rtlEnabled: this.rtlEnabled });
-                    break;
-
                 case 'getStats':
                     const conversations = this.extractConversation();
-                    sendResponse({ 
-                        messageCount: conversations.length,
-                        rtlEnabled: this.rtlEnabled
+                    sendResponse({
+                        messageCount: conversations.length
                     });
+                    break;
+
+                case 'search':
+                    const searchResults = this.searchConversation(request.query);
+                    sendResponse({
+                        success: true,
+                        results: searchResults
+                    });
+                    break;
+
+                case 'highlightMessage':
+                    this.highlightMessage(request.index);
+                    sendResponse({ success: true });
                     break;
 
                 default:
@@ -483,8 +519,8 @@ class GensparkRTLToolbox {
 // אתחול התוסף
 if (typeof window !== 'undefined') {
     // וודא שהתוסף לא רץ כבר
-    if (!window.gensparkRTLToolbox) {
-        window.gensparkRTLToolbox = new GensparkRTLToolbox();
-        console.log('🎯 Genspark RTL Toolbox v2.3 אותחל');
+    if (!window.gensparkDownloadToolbox) {
+        window.gensparkDownloadToolbox = new GensparkRTLToolbox();
+        console.log('🎯 Genspark Download Toolbox v2.3 אותחל');
     }
 }

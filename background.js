@@ -1,5 +1,5 @@
 /**
- * Genspark RTL Toolbox v2.3 - Background Service Worker
+ * Genspark Download Toolbox v2.3 - Background Service Worker
  * שירות רקע לניהול התוסף
  */
 
@@ -67,7 +67,6 @@ class BackgroundService {
 
     async setDefaultSettings() {
         const defaultSettings = {
-            rtlEnabled: true,
             autoDownload: false,
             downloadFormat: 'both',
             showNotifications: true,
@@ -188,8 +187,7 @@ class BackgroundService {
             this.tabStates.set(tabId, {
                 url: tab.url,
                 title: tab.title,
-                loadTime: new Date().toISOString(),
-                rtlEnabled: true // ברירת מחדל
+                loadTime: new Date().toISOString()
             });
         }
     }
@@ -251,8 +249,8 @@ class BackgroundService {
             chrome.notifications.create({
                 type: 'basic',
                 iconUrl: 'icon48.png',
-                title: 'ברוכים הבאים ל-Genspark RTL Toolbox!',
-                message: 'התוסף הותקן בהצלחה. כעת תוכלו להשתמש בתמיכה מלאה בעברית ו-RTL באתר Genspark.ai'
+                title: 'ברוכים הבאים ל-Genspark Download Toolbox!',
+                message: 'התוסף הותקן בהצלחה. כעת תוכלו להוריד ולנהל את השיחות שלכם מ-Genspark.ai'
             });
         }
     }
@@ -262,7 +260,7 @@ class BackgroundService {
             chrome.notifications.create({
                 type: 'basic',
                 iconUrl: 'icon48.png',
-                title: 'Genspark RTL Toolbox עודכן!',
+                title: 'Genspark Download Toolbox עודכן!',
                 message: `התוסף עודכן מגרסה ${previousVersion} לגרסה ${this.version} עם שיפורים חדשים`
             });
         }
@@ -316,4 +314,4 @@ self.addEventListener('beforeunload', () => {
     console.log('Background service נכנס להשעיה');
 });
 
-console.log('🚀 Genspark RTL Toolbox Background Service v2.3 פעיל');
+console.log('🚀 Genspark Download Toolbox Background Service v2.3 פעיל');

@@ -254,6 +254,110 @@
             font-size: 16px;
         }
 
+        .search-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .search-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .search-title {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .close-search {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        .close-search:hover {
+            color: #dc3545;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .search-result-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-right: 3px solid #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: #e9ecef;
+            transform: translateX(-2px);
+        }
+
+        .search-result-type {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .search-result-content {
+            color: #495057;
+            font-size: 13px;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .search-highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-weight: bold;
+        }
+
+        .search-no-results {
+            text-align: center;
+            color: #6c757d;
+            padding: 20px;
+            font-size: 14px;
+        }
+
         @media (prefers-color-scheme: dark) {
             .content, .header {
                 background: rgba(33, 37, 41, 0.95);
@@ -269,7 +373,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo">🛠️ Genspark RTL Toolbox</div>
+        <div class="logo">🛠️ Genspark Download Toolbox</div>
         <div class="version">גרסה 2.3</div>
     </div>
 
@@ -289,20 +393,27 @@
                 <div class="stat-number" id="messageCount">0</div>
                 <div class="stat-label">הודעות בשיחה</div>
             </div>
-            <div class="stat-item">
-                <div class="stat-number" id="rtlStatus">OFF</div>
-                <div class="stat-label">מצב RTL</div>
-            </div>
         </div>
 
-        <div class="toggle-container">
-            <span class="toggle-label">🌐 תמיכה ב-RTL</span>
-            <div class="toggle-switch" id="rtlToggle">
-                <div class="toggle-slider"></div>
+        <div class="search-container" id="searchContainer" style="display: none;">
+            <div class="search-header">
+                <span class="search-title">🔍 חיפוש בשיחה</span>
+                <button class="close-search" id="closeSearch">✕</button>
             </div>
+            <input type="text" id="searchInput" class="search-input" placeholder="הקלד טקסט או מילה לחיפוש..." />
+            <button class="btn btn-secondary" id="searchBtn">
+                <span class="icon">🔎</span>
+                חפש
+            </button>
+            <div id="searchResults" class="search-results"></div>
         </div>
 
         <div class="button-group">
+            <button class="btn btn-success" id="toggleSearchBtn" disabled>
+                <span class="icon">🔍</span>
+                חיפוש בשיחה
+            </button>
+
             <button class="btn btn-primary" id="downloadBtn" disabled>
                 <span class="icon">📥</span>
                 הורד שיחה (JSON + TXT)
@@ -334,7 +445,7 @@
 
     <div class="footer">
         <div>🚀 מפותח עבור Genspark.ai</div>
-        <div>תמיכה מלאה בעברית ו-RTL</div>
+        <div>ניהול והורדת שיחות</div>
     </div>
 
     <script src="popup.js"></script>

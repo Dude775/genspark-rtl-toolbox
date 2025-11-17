@@ -7,7 +7,7 @@ class PopupManager {
     constructor() {
         this.isConnected = false;
         this.currentTab = null;
-        this.stats = { messageCount: 0, rtlEnabled: false };
+        this.stats = { messageCount: 0 };
 
         this.elements = {};
         this.init();
@@ -28,12 +28,16 @@ class PopupManager {
             statusInfo: document.getElementById('statusInfo'),
             statsGrid: document.getElementById('statsGrid'),
             messageCount: document.getElementById('messageCount'),
-            rtlStatus: document.getElementById('rtlStatus'),
-            rtlToggle: document.getElementById('rtlToggle'),
             downloadBtn: document.getElementById('downloadBtn'),
             downloadJsonBtn: document.getElementById('downloadJsonBtn'),
             downloadTxtBtn: document.getElementById('downloadTxtBtn'),
             refreshBtn: document.getElementById('refreshBtn'),
+            toggleSearchBtn: document.getElementById('toggleSearchBtn'),
+            searchContainer: document.getElementById('searchContainer'),
+            searchInput: document.getElementById('searchInput'),
+            searchBtn: document.getElementById('searchBtn'),
+            closeSearch: document.getElementById('closeSearch'),
+            searchResults: document.getElementById('searchResults'),
             loading: document.getElementById('loading'),
             message: document.getElementById('message')
         };
@@ -60,9 +64,26 @@ class PopupManager {
             this.refreshData();
         });
 
-        // מתג RTL
-        this.elements.rtlToggle?.addEventListener('click', () => {
-            this.toggleRTL();
+        // כפתור פתיחת חיפוש
+        this.elements.toggleSearchBtn?.addEventListener('click', () => {
+            this.toggleSearch();
+        });
+
+        // כפתור סגירת חיפוש
+        this.elements.closeSearch?.addEventListener('click', () => {
+            this.closeSearchPanel();
+        });
+
+        // כפתור חיפוש
+        this.elements.searchBtn?.addEventListener('click', () => {
+            this.performSearch();
+        });
+
+        // חיפוש בלחיצה על Enter
+        this.elements.searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.performSearch();
+            }
         });
     }
 
@@ -160,8 +181,7 @@ class PopupManager {
 
             if (response) {
                 this.stats = {
-                    messageCount: response.messageCount || 0,
-                    rtlEnabled: response.rtlEnabled || false
+                    messageCount: response.messageCount || 0
                 };
 
                 this.updateStatsDisplay();
@@ -175,19 +195,6 @@ class PopupManager {
     updateStatsDisplay() {
         if (this.elements.messageCount) {
             this.elements.messageCount.textContent = this.stats.messageCount;
-        }
-
-        if (this.elements.rtlStatus) {
-            this.elements.rtlStatus.textContent = this.stats.rtlEnabled ? 'ON' : 'OFF';
-        }
-
-        // עדכן מתג RTL
-        if (this.elements.rtlToggle) {
-            if (this.stats.rtlEnabled) {
-                this.elements.rtlToggle.classList.add('active');
-            } else {
-                this.elements.rtlToggle.classList.remove('active');
-            }
         }
 
         // הצג נתונים
@@ -224,32 +231,126 @@ class PopupManager {
         }
     }
 
-    async toggleRTL() {
-        try {
-            if (!this.isConnected) {
-                throw new Error('אין חיבור לתוסף');
-            }
-
-            const response = await this.sendMessageToTab('toggleRTL');
-
-            if (response && typeof response.rtlEnabled === 'boolean') {
-                this.stats.rtlEnabled = response.rtlEnabled;
-                this.updateStatsDisplay();
-
-                const status = this.stats.rtlEnabled ? 'הופעל' : 'הושבת';
-                this.showMessage(`RTL ${status}`, 'success');
-            }
-
-        } catch (error) {
-            console.error('RTL toggle failed:', error);
-            this.showMessage('❌ שגיאה בשינוי RTL: ' + error.message, 'error');
-        }
-    }
-
     async refreshData() {
         this.showMessage('מרענן נתונים...', 'info');
         await this.checkConnection();
         this.showMessage('✅ נתונים עודכנו', 'success');
+    }
+
+    toggleSearch() {
+        if (!this.isConnected) {
+            this.showMessage('❌ אין חיבור לתוסף', 'error');
+            return;
+        }
+
+        const isVisible = this.elements.searchContainer.style.display !== 'none';
+
+        if (isVisible) {
+            this.closeSearchPanel();
+        } else {
+            this.openSearchPanel();
+        }
+    }
+
+    openSearchPanel() {
+        this.elements.searchContainer.style.display = 'block';
+        this.elements.searchInput.value = '';
+        this.elements.searchResults.innerHTML = '';
+        this.elements.searchInput.focus();
+    }
+
+    closeSearchPanel() {
+        this.elements.searchContainer.style.display = 'none';
+        this.elements.searchInput.value = '';
+        this.elements.searchResults.innerHTML = '';
+    }
+
+    async performSearch() {
+        const query = this.elements.searchInput.value.trim();
+
+        if (!query) {
+            this.showMessage('⚠️ נא להזין טקסט לחיפוש', 'error');
+            return;
+        }
+
+        try {
+            this.showLoading(true);
+            this.elements.searchResults.innerHTML = '<div class="search-no-results">מחפש...</div>';
+
+            const response = await this.sendMessageToTab('search', { query });
+
+            if (response && response.success) {
+                this.displaySearchResults(response.results, query);
+            } else {
+                throw new Error('כשל בחיפוש');
+            }
+
+        } catch (error) {
+            console.error('Search failed:', error);
+            this.showMessage('❌ שגיאה בחיפוש: ' + error.message, 'error');
+            this.elements.searchResults.innerHTML = '<div class="search-no-results">שגיאה בחיפוש</div>';
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    displaySearchResults(results, query) {
+        if (!results || results.length === 0) {
+            this.elements.searchResults.innerHTML = '<div class="search-no-results">לא נמצאו תוצאות</div>';
+            return;
+        }
+
+        let html = '';
+
+        results.forEach((result) => {
+            const typeLabel = result.type === 'user' ? '👤 משתמש' : '🤖 AI';
+
+            // הדגש את המילה שחיפשנו
+            const highlightedSnippet = this.highlightText(result.snippet, query);
+
+            html += `
+                <div class="search-result-item" data-index="${result.index}">
+                    <div class="search-result-type">${typeLabel}</div>
+                    <div class="search-result-content">${highlightedSnippet}</div>
+                </div>
+            `;
+        });
+
+        this.elements.searchResults.innerHTML = html;
+
+        // הוסף event listeners לתוצאות
+        this.elements.searchResults.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const index = parseInt(item.dataset.index);
+                this.highlightMessageInPage(index);
+            });
+        });
+
+        this.showMessage(`✅ נמצאו ${results.length} תוצאות`, 'success');
+    }
+
+    highlightText(text, query) {
+        const lowerText = text.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        const index = lowerText.indexOf(lowerQuery);
+
+        if (index === -1) return text;
+
+        const before = text.substring(0, index);
+        const match = text.substring(index, index + query.length);
+        const after = text.substring(index + query.length);
+
+        return `${before}<span class="search-highlight">${match}</span>${after}`;
+    }
+
+    async highlightMessageInPage(index) {
+        try {
+            await this.sendMessageToTab('highlightMessage', { index });
+            this.showMessage('✅ גלילה להודעה', 'success');
+        } catch (error) {
+            console.error('Highlight failed:', error);
+            this.showMessage('❌ שגיאה בהדגשת הודעה', 'error');
+        }
     }
 
     updateStatus(icon, title, info) {
@@ -278,7 +379,8 @@ class PopupManager {
         const buttons = [
             this.elements.downloadBtn,
             this.elements.downloadJsonBtn,
-            this.elements.downloadTxtBtn
+            this.elements.downloadTxtBtn,
+            this.elements.toggleSearchBtn
         ];
 
         buttons.forEach(button => {
@@ -286,12 +388,6 @@ class PopupManager {
                 button.disabled = !enabled;
             }
         });
-
-        // RTL toggle
-        if (this.elements.rtlToggle) {
-            this.elements.rtlToggle.style.opacity = enabled ? '1' : '0.5';
-            this.elements.rtlToggle.style.pointerEvents = enabled ? 'auto' : 'none';
-        }
     }
 
     showLoading(show) {
@@ -327,4 +423,4 @@ window.addEventListener('error', (event) => {
 });
 
 // Log לצורך דיבוג
-console.log('🎮 Genspark RTL Toolbox Popup v2.3 נטען');
+console.log('🎮 Genspark Download Toolbox Popup v2.3 נטען');
