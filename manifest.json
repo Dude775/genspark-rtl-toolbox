@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Genspark RTL Toolbox",
-  "version": "2.3",
-  "description": "תוסף לתמיכה בעברית ו-RTL באתר Genspark.ai עם יכולות הורדת שיחות",
+  "version": "2.4",
+  "description": "תוסף לתמיכה בעברית ו-RTL באתר Genspark.ai עם מנהל שיחות והורדת נתונים",
 
   "permissions": [
     "storage",

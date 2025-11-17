@@ -1,6 +1,7 @@
 /**
- * Genspark RTL Toolbox v2.3 - Content Script
+ * Genspark RTL Toolbox v2.4 - Content Script
  * תוסף לתמיכה בעברית ו-RTL באתר Genspark.ai עם יכולות הורדת שיחות מתקדמות
+ * תכונה חדשה: מנהל שיחות - ניהול והורדה של כל השיחות
  */
 
 class GensparkRTLToolbox {
@@ -8,6 +9,12 @@ class GensparkRTLToolbox {
         this.isInitialized = false;
         this.conversations = [];
         this.rtlEnabled = true;
+        this.conversationManager = {
+            enabled: true,
+            autoSave: true,
+            conversations: new Map(),
+            currentConversationId: null
+        };
 
         // סלקטורים מתוקנים עבור Genspark
         this.selectors = {
@@ -87,7 +94,11 @@ class GensparkRTLToolbox {
         this.isInitialized = true;
     }
 
-    setup() {
+    async setup() {
+        // טען הגדרות מהאחסון
+        await this.loadSettings();
+        await this.loadSavedConversations();
+
         this.applyRTLStyles();
         this.addDownloadButton();
         this.setupMessageListeners();
@@ -96,7 +107,18 @@ class GensparkRTLToolbox {
         // הוסף ping handler
         this.setupPingHandler();
 
-        console.log('✅ Genspark RTL Toolbox v2.3 הופעל בהצלחה');
+        console.log('✅ Genspark RTL Toolbox v2.4 הופעל בהצלחה');
+    }
+
+    async loadSettings() {
+        try {
+            const settings = await chrome.storage.sync.get(['rtlEnabled']);
+            if (typeof settings.rtlEnabled === 'boolean') {
+                this.rtlEnabled = settings.rtlEnabled;
+            }
+        } catch (error) {
+            console.warn('לא ניתן לטעון הגדרות:', error);
+        }
     }
 
     setupPingHandler() {
@@ -406,12 +428,27 @@ class GensparkRTLToolbox {
 
         if (this.rtlEnabled) {
             document.documentElement.classList.add('genspark-rtl-enabled');
+            document.body.classList.add('genspark-rtl-enabled');
         } else {
             document.documentElement.classList.remove('genspark-rtl-enabled');
+            document.body.classList.remove('genspark-rtl-enabled');
+
+            // אפס מפורש את הכיוון
+            document.documentElement.style.direction = 'ltr';
+            document.body.style.direction = 'ltr';
+
+            // אפס אחרי זמן קצר כדי לאפשר לדף לחזור למצבו הטבעי
+            setTimeout(() => {
+                document.documentElement.style.direction = '';
+                document.body.style.direction = '';
+            }, 100);
         }
 
         // שמור הגדרה
         chrome.storage.sync.set({ rtlEnabled: this.rtlEnabled });
+
+        // כפה עדכון תצוגה
+        document.body.offsetHeight; // Force reflow
 
         console.log(`RTL ${this.rtlEnabled ? 'הופעל' : 'הושבת'}`);
     }
@@ -450,7 +487,7 @@ class GensparkRTLToolbox {
 
             switch (request.action) {
                 case 'ping':
-                    sendResponse({ status: 'active', version: '2.3' });
+                    sendResponse({ status: 'active', version: '2.4' });
                     break;
 
                 case 'download':
@@ -465,11 +502,38 @@ class GensparkRTLToolbox {
 
                 case 'getStats':
                     const conversations = this.extractConversation();
-                    sendResponse({ 
-                        messageCount: conversations.length,
-                        rtlEnabled: this.rtlEnabled
+                    this.getAllSavedConversations().then(result => {
+                        sendResponse({
+                            messageCount: conversations.length,
+                            rtlEnabled: this.rtlEnabled,
+                            savedConversations: result.success ? result.conversations.length : 0
+                        });
                     });
-                    break;
+                    return true; // async response
+
+                case 'saveCurrentConversation':
+                    this.saveCurrentConversation().then(result => {
+                        sendResponse(result);
+                    });
+                    return true; // async response
+
+                case 'getAllConversations':
+                    this.getAllSavedConversations().then(result => {
+                        sendResponse(result);
+                    });
+                    return true; // async response
+
+                case 'deleteConversation':
+                    this.deleteConversation(request.conversationId).then(result => {
+                        sendResponse(result);
+                    });
+                    return true; // async response
+
+                case 'downloadAllConversations':
+                    this.downloadAllConversations(request.format || 'json').then(result => {
+                        sendResponse(result);
+                    });
+                    return true; // async response
 
                 default:
                     sendResponse({ error: 'Unknown action' });
@@ -477,6 +541,215 @@ class GensparkRTLToolbox {
 
             return true; // שמור על החיבור עבור תגובה אסינכרונית
         });
+    }
+
+    // ========== מנהל שיחות - פונקציות חדשות ==========
+
+    async saveCurrentConversation() {
+        try {
+            const conversations = this.extractConversation();
+
+            if (conversations.length === 0) {
+                return { success: false, error: 'אין שיחה לשמור' };
+            }
+
+            const conversationId = this.generateConversationId();
+            const conversationData = {
+                id: conversationId,
+                title: this.getPageTitle(),
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                messageCount: conversations.length,
+                messages: conversations,
+                savedAt: new Date().toISOString()
+            };
+
+            // שמור ב-localStorage ו-chrome.storage
+            await this.saveConversationToStorage(conversationData);
+
+            console.log('✅ שיחה נשמרה:', conversationId);
+            return { success: true, conversationId, messageCount: conversations.length };
+
+        } catch (error) {
+            console.error('❌ שגיאה בשמירת שיחה:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async saveConversationToStorage(conversationData) {
+        // שמור ב-chrome.storage.local
+        const storageKey = `conversation_${conversationData.id}`;
+        const indexKey = 'conversation_index';
+
+        // שמור את השיחה
+        await chrome.storage.local.set({ [storageKey]: conversationData });
+
+        // עדכן אינדקס
+        const result = await chrome.storage.local.get([indexKey]);
+        const index = result[indexKey] || [];
+
+        const indexEntry = {
+            id: conversationData.id,
+            title: conversationData.title,
+            url: conversationData.url,
+            timestamp: conversationData.timestamp,
+            messageCount: conversationData.messageCount,
+            savedAt: conversationData.savedAt
+        };
+
+        // הוסף או עדכן באינדקס
+        const existingIndex = index.findIndex(item => item.id === conversationData.id);
+        if (existingIndex >= 0) {
+            index[existingIndex] = indexEntry;
+        } else {
+            index.push(indexEntry);
+        }
+
+        await chrome.storage.local.set({ [indexKey]: index });
+
+        // עדכן את המפה המקומית
+        this.conversationManager.conversations.set(conversationData.id, conversationData);
+    }
+
+    async getAllSavedConversations() {
+        try {
+            const indexKey = 'conversation_index';
+            const result = await chrome.storage.local.get([indexKey]);
+            const index = result[indexKey] || [];
+
+            // מיין לפי תאריך (החדשות ביותר ראשונות)
+            index.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+            return { success: true, conversations: index };
+
+        } catch (error) {
+            console.error('❌ שגיאה בטעינת שיחות:', error);
+            return { success: false, error: error.message, conversations: [] };
+        }
+    }
+
+    async deleteConversation(conversationId) {
+        try {
+            const storageKey = `conversation_${conversationId}`;
+            const indexKey = 'conversation_index';
+
+            // מחק את השיחה
+            await chrome.storage.local.remove([storageKey]);
+
+            // עדכן אינדקס
+            const result = await chrome.storage.local.get([indexKey]);
+            const index = result[indexKey] || [];
+            const updatedIndex = index.filter(item => item.id !== conversationId);
+            await chrome.storage.local.set({ [indexKey]: updatedIndex });
+
+            // עדכן מפה מקומית
+            this.conversationManager.conversations.delete(conversationId);
+
+            console.log('✅ שיחה נמחקה:', conversationId);
+            return { success: true };
+
+        } catch (error) {
+            console.error('❌ שגיאה במחיקת שיחה:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async downloadAllConversations(format = 'json') {
+        try {
+            const { success, conversations } = await this.getAllSavedConversations();
+
+            if (!success || conversations.length === 0) {
+                return { success: false, error: 'אין שיחות שמורות להורדה' };
+            }
+
+            // טען את כל השיחות המלאות
+            const fullConversations = [];
+            for (const conv of conversations) {
+                const storageKey = `conversation_${conv.id}`;
+                const result = await chrome.storage.local.get([storageKey]);
+                if (result[storageKey]) {
+                    fullConversations.push(result[storageKey]);
+                }
+            }
+
+            const timestamp = new Date().toISOString().split('T')[0];
+
+            if (format === 'json') {
+                const data = {
+                    exportDate: new Date().toISOString(),
+                    totalConversations: fullConversations.length,
+                    conversations: fullConversations
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], {
+                    type: 'application/json;charset=utf-8'
+                });
+
+                this.downloadBlob(blob, `genspark_all_conversations_${timestamp}.json`);
+            } else if (format === 'txt') {
+                let content = `כל השיחות מ-Genspark.ai\n`;
+                content += `תאריך ייצוא: ${new Date().toLocaleString('he-IL')}\n`;
+                content += `סך הכל שיחות: ${fullConversations.length}\n`;
+                content += `${'='.repeat(70)}\n\n`;
+
+                fullConversations.forEach((conv, index) => {
+                    content += `\n${'#'.repeat(70)}\n`;
+                    content += `שיחה ${index + 1} מתוך ${fullConversations.length}\n`;
+                    content += `כותרת: ${conv.title}\n`;
+                    content += `תאריך: ${new Date(conv.timestamp).toLocaleString('he-IL')}\n`;
+                    content += `הודעות: ${conv.messageCount}\n`;
+                    content += `${'#'.repeat(70)}\n\n`;
+
+                    conv.messages.forEach((msg, msgIndex) => {
+                        const speaker = msg.type === 'user' ? '👤 משתמש' : '🤖 AI';
+                        content += `${speaker} (${msgIndex + 1}):\n`;
+                        content += `${msg.content}\n\n`;
+                        content += `${'-'.repeat(50)}\n\n`;
+                    });
+                });
+
+                const blob = new Blob([content], {
+                    type: 'text/plain;charset=utf-8'
+                });
+
+                this.downloadBlob(blob, `genspark_all_conversations_${timestamp}.txt`);
+            }
+
+            return { success: true, count: fullConversations.length };
+
+        } catch (error) {
+            console.error('❌ שגיאה בהורדת כל השיחות:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    generateConversationId() {
+        // צור ID ייחודי על בסיס URL ותאריך
+        const url = window.location.href;
+        const timestamp = Date.now();
+        const hash = this.simpleHash(`${url}_${timestamp}`);
+        return `conv_${hash}_${timestamp}`;
+    }
+
+    simpleHash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return Math.abs(hash).toString(36);
+    }
+
+    async loadSavedConversations() {
+        try {
+            const { success, conversations } = await this.getAllSavedConversations();
+            if (success) {
+                console.log(`📚 נטענו ${conversations.length} שיחות שמורות`);
+            }
+        } catch (error) {
+            console.warn('לא ניתן לטעון שיחות שמורות:', error);
+        }
     }
 }
 

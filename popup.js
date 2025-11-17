@@ -1,13 +1,15 @@
 /**
- * Genspark RTL Toolbox v2.3 - Popup Script
+ * Genspark RTL Toolbox v2.4 - Popup Script
  * לוגיקת ממשק המשתמש של התוסף
+ * תכונה חדשה: מנהל שיחות
  */
 
 class PopupManager {
     constructor() {
         this.isConnected = false;
         this.currentTab = null;
-        this.stats = { messageCount: 0, rtlEnabled: false };
+        this.stats = { messageCount: 0, rtlEnabled: false, savedConversations: 0 };
+        this.conversations = [];
 
         this.elements = {};
         this.init();
@@ -29,13 +31,22 @@ class PopupManager {
             statsGrid: document.getElementById('statsGrid'),
             messageCount: document.getElementById('messageCount'),
             rtlStatus: document.getElementById('rtlStatus'),
+            savedCount: document.getElementById('savedCount'),
             rtlToggle: document.getElementById('rtlToggle'),
             downloadBtn: document.getElementById('downloadBtn'),
             downloadJsonBtn: document.getElementById('downloadJsonBtn'),
             downloadTxtBtn: document.getElementById('downloadTxtBtn'),
             refreshBtn: document.getElementById('refreshBtn'),
             loading: document.getElementById('loading'),
-            message: document.getElementById('message')
+            message: document.getElementById('message'),
+            // Conversation Manager
+            conversationManager: document.getElementById('conversationManager'),
+            saveConversationBtn: document.getElementById('saveConversationBtn'),
+            viewConversationsBtn: document.getElementById('viewConversationsBtn'),
+            downloadAllBtn: document.getElementById('downloadAllBtn'),
+            conversationsList: document.getElementById('conversationsList'),
+            conversationsContainer: document.getElementById('conversationsContainer'),
+            closeListBtn: document.getElementById('closeListBtn')
         };
     }
 
@@ -63,6 +74,23 @@ class PopupManager {
         // מתג RTL
         this.elements.rtlToggle?.addEventListener('click', () => {
             this.toggleRTL();
+        });
+
+        // Conversation Manager Events
+        this.elements.saveConversationBtn?.addEventListener('click', () => {
+            this.saveCurrentConversation();
+        });
+
+        this.elements.viewConversationsBtn?.addEventListener('click', () => {
+            this.viewConversations();
+        });
+
+        this.elements.downloadAllBtn?.addEventListener('click', () => {
+            this.downloadAllConversations();
+        });
+
+        this.elements.closeListBtn?.addEventListener('click', () => {
+            this.closeConversationsList();
         });
     }
 
@@ -161,7 +189,8 @@ class PopupManager {
             if (response) {
                 this.stats = {
                     messageCount: response.messageCount || 0,
-                    rtlEnabled: response.rtlEnabled || false
+                    rtlEnabled: response.rtlEnabled || false,
+                    savedConversations: response.savedConversations || 0
                 };
 
                 this.updateStatsDisplay();
@@ -181,6 +210,10 @@ class PopupManager {
             this.elements.rtlStatus.textContent = this.stats.rtlEnabled ? 'ON' : 'OFF';
         }
 
+        if (this.elements.savedCount) {
+            this.elements.savedCount.textContent = this.stats.savedConversations || 0;
+        }
+
         // עדכן מתג RTL
         if (this.elements.rtlToggle) {
             if (this.stats.rtlEnabled) {
@@ -193,6 +226,11 @@ class PopupManager {
         // הצג נתונים
         if (this.elements.statsGrid) {
             this.elements.statsGrid.style.display = 'grid';
+        }
+
+        // הצג מנהל שיחות
+        if (this.elements.conversationManager) {
+            this.elements.conversationManager.style.display = 'block';
         }
     }
 
@@ -278,7 +316,8 @@ class PopupManager {
         const buttons = [
             this.elements.downloadBtn,
             this.elements.downloadJsonBtn,
-            this.elements.downloadTxtBtn
+            this.elements.downloadTxtBtn,
+            this.elements.saveConversationBtn
         ];
 
         buttons.forEach(button => {
@@ -313,6 +352,198 @@ class PopupManager {
                 this.elements.message.style.display = 'none';
             }
         }, 3000);
+    }
+
+    // ========== Conversation Manager Methods ==========
+
+    async saveCurrentConversation() {
+        try {
+            if (!this.isConnected) {
+                throw new Error('אין חיבור לתוסף');
+            }
+
+            this.showLoading(true);
+            this.showMessage('שומר שיחה...', 'info');
+
+            const response = await this.sendMessageToTab('saveCurrentConversation');
+
+            if (response && response.success) {
+                this.showMessage(`✅ השיחה נשמרה בהצלחה! (${response.messageCount} הודעות)`, 'success');
+
+                // עדכן נתונים
+                await this.loadStats();
+            } else {
+                throw new Error(response?.error || 'כשל בשמירת השיחה');
+            }
+
+        } catch (error) {
+            console.error('Save failed:', error);
+            this.showMessage('❌ שגיאה בשמירה: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async viewConversations() {
+        try {
+            this.showLoading(true);
+
+            const response = await this.sendMessageToTab('getAllConversations');
+
+            if (response && response.success) {
+                this.conversations = response.conversations;
+                this.displayConversations();
+            } else {
+                throw new Error(response?.error || 'כשל בטעינת שיחות');
+            }
+
+        } catch (error) {
+            console.error('View conversations failed:', error);
+            this.showMessage('❌ שגיאה בטעינת שיחות: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    displayConversations() {
+        if (!this.elements.conversationsContainer) return;
+
+        // נקה רשימה קודמת
+        this.elements.conversationsContainer.innerHTML = '';
+
+        if (this.conversations.length === 0) {
+            this.elements.conversationsContainer.innerHTML = '<div class="no-conversations">אין שיחות שמורות</div>';
+        } else {
+            this.conversations.forEach(conv => {
+                const item = this.createConversationItem(conv);
+                this.elements.conversationsContainer.appendChild(item);
+            });
+        }
+
+        // הצג רשימה
+        if (this.elements.conversationsList) {
+            this.elements.conversationsList.style.display = 'flex';
+        }
+    }
+
+    createConversationItem(conv) {
+        const item = document.createElement('div');
+        item.className = 'conversation-item';
+
+        const title = document.createElement('div');
+        title.className = 'conversation-title';
+        title.textContent = conv.title || 'שיחה ללא כותרת';
+
+        const meta = document.createElement('div');
+        meta.className = 'conversation-meta';
+
+        const date = new Date(conv.savedAt);
+        const dateStr = date.toLocaleDateString('he-IL', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        meta.innerHTML = `
+            <span>${dateStr}</span>
+            <span>${conv.messageCount} הודעות</span>
+        `;
+
+        const actions = document.createElement('div');
+        actions.className = 'conversation-actions';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'small-btn small-btn-danger';
+        deleteBtn.textContent = '🗑️ מחק';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.deleteConversation(conv.id);
+        };
+
+        const openBtn = document.createElement('button');
+        openBtn.className = 'small-btn small-btn-info';
+        openBtn.textContent = '🔗 פתח';
+        openBtn.onclick = (e) => {
+            e.stopPropagation();
+            chrome.tabs.create({ url: conv.url });
+        };
+
+        actions.appendChild(openBtn);
+        actions.appendChild(deleteBtn);
+
+        item.appendChild(title);
+        item.appendChild(meta);
+        item.appendChild(actions);
+
+        return item;
+    }
+
+    async deleteConversation(conversationId) {
+        try {
+            if (!confirm('האם אתה בטוח שברצונך למחוק שיחה זו?')) {
+                return;
+            }
+
+            this.showLoading(true);
+
+            const response = await this.sendMessageToTab('deleteConversation', { conversationId });
+
+            if (response && response.success) {
+                this.showMessage('✅ השיחה נמחקה בהצלחה', 'success');
+
+                // רענן רשימה
+                await this.viewConversations();
+                await this.loadStats();
+            } else {
+                throw new Error(response?.error || 'כשל במחיקת השיחה');
+            }
+
+        } catch (error) {
+            console.error('Delete failed:', error);
+            this.showMessage('❌ שגיאה במחיקה: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async downloadAllConversations() {
+        try {
+            if (!confirm('האם להוריד את כל השיחות השמורות?')) {
+                return;
+            }
+
+            this.showLoading(true);
+            this.showMessage('מוריד את כל השיחות...', 'info');
+
+            // הורד גם JSON וגם TXT
+            const jsonResponse = await this.sendMessageToTab('downloadAllConversations', { format: 'json' });
+
+            if (jsonResponse && jsonResponse.success) {
+                await new Promise(resolve => setTimeout(resolve, 500)); // המתן קצת
+
+                const txtResponse = await this.sendMessageToTab('downloadAllConversations', { format: 'txt' });
+
+                if (txtResponse && txtResponse.success) {
+                    this.showMessage(`✅ כל השיחות הורדו בהצלחה! (${jsonResponse.count} שיחות)`, 'success');
+                }
+            } else {
+                throw new Error(jsonResponse?.error || 'כשל בהורדת השיחות');
+            }
+
+        } catch (error) {
+            console.error('Download all failed:', error);
+            this.showMessage('❌ שגיאה בהורדה: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    closeConversationsList() {
+        if (this.elements.conversationsList) {
+            this.elements.conversationsList.style.display = 'none';
+        }
     }
 }
 

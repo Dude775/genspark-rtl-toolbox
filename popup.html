@@ -176,7 +176,7 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             margin: 15px 0;
         }
@@ -254,6 +254,144 @@
             font-size: 16px;
         }
 
+        /* Conversation Manager Styles */
+        .conversation-manager {
+            margin: 15px 0;
+            padding: 15px 0;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .conversations-list {
+            margin-top: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .conversations-container {
+            padding: 10px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .conversation-item {
+            background: white;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-right: 3px solid #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .conversation-item:hover {
+            transform: translateX(-3px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .conversation-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .conversation-meta {
+            font-size: 11px;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .conversation-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .small-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .small-btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .small-btn-danger:hover {
+            background: #c82333;
+        }
+
+        .small-btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .small-btn-info:hover {
+            background: #138496;
+        }
+
+        .loading-text {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .no-conversations {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
         @media (prefers-color-scheme: dark) {
             .content, .header {
                 background: rgba(33, 37, 41, 0.95);
@@ -264,13 +402,21 @@
                 background: #495057;
                 color: #fff;
             }
+
+            .conversation-item {
+                background: #343a40;
+            }
+
+            .conversation-title {
+                color: #f8f9fa;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">🛠️ Genspark RTL Toolbox</div>
-        <div class="version">גרסה 2.3</div>
+        <div class="version">גרסה 2.4</div>
     </div>
 
     <div class="content">
@@ -293,12 +439,47 @@
                 <div class="stat-number" id="rtlStatus">OFF</div>
                 <div class="stat-label">מצב RTL</div>
             </div>
+            <div class="stat-item">
+                <div class="stat-number" id="savedCount">0</div>
+                <div class="stat-label">שיחות שמורות</div>
+            </div>
         </div>
 
         <div class="toggle-container">
             <span class="toggle-label">🌐 תמיכה ב-RTL</span>
             <div class="toggle-switch" id="rtlToggle">
                 <div class="toggle-slider"></div>
+            </div>
+        </div>
+
+        <!-- מנהל שיחות -->
+        <div class="conversation-manager" id="conversationManager" style="display: none;">
+            <div class="section-title">💼 מנהל שיחות</div>
+
+            <button class="btn btn-success" id="saveConversationBtn" disabled>
+                <span class="icon">💾</span>
+                שמור שיחה נוכחית
+            </button>
+
+            <button class="btn btn-primary" id="viewConversationsBtn">
+                <span class="icon">📚</span>
+                הצג שיחות שמורות
+            </button>
+
+            <button class="btn btn-secondary" id="downloadAllBtn">
+                <span class="icon">📦</span>
+                הורד את כל השיחות
+            </button>
+
+            <!-- רשימת שיחות -->
+            <div id="conversationsList" class="conversations-list" style="display: none;">
+                <div class="list-header">
+                    <span>שיחות שמורות</span>
+                    <button class="close-btn" id="closeListBtn">✖</button>
+                </div>
+                <div id="conversationsContainer" class="conversations-container">
+                    <div class="loading-text">טוען שיחות...</div>
+                </div>
             </div>
         </div>
 

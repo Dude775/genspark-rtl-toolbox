@@ -1,6 +1,7 @@
 /**
- * Genspark RTL Toolbox v2.3 - RTL Styles
+ * Genspark RTL Toolbox v2.4 - RTL Styles
  * עיצוב RTL מתקדם עבור Genspark.ai
+ * תיקון: שיפור התנהגות כיבוי RTL ותצוגה
  */
 
 /* === הפעלת RTL כאשר הקלאס פעיל === */
@@ -9,10 +10,16 @@ html.genspark-rtl-enabled body {
     direction: rtl !important;
 }
 
+/* === כיבוי מפורש של RTL === */
+html:not(.genspark-rtl-enabled),
+html:not(.genspark-rtl-enabled) body {
+    direction: ltr !important;
+}
+
 /* === עיצוב כללי === */
-.genspark-rtl-enabled * {
-    font-family: 'Segoe UI', 'Arial Unicode MS', 'David', 'Frank Ruehl CLM', 
-                 'Times New Roman', Arial, sans-serif !important;
+.genspark-rtl-enabled {
+    font-family: 'Segoe UI', 'Arial Unicode MS', 'David', 'Frank Ruehl CLM',
+                 'Times New Roman', Arial, sans-serif;
 }
 
 /* === תיקון כיוון לטקסט בעברית === */
