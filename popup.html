@@ -394,6 +394,109 @@
             margin-right: 5px;
         }
 
+        /* Conversation Manager Styles */
+        .manager-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .section-title {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .saved-conversations-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .saved-conversations-list {
+            margin-top: 10px;
+        }
+
+        .saved-conversation-item {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-right: 3px solid #667eea;
+            transition: all 0.2s;
+        }
+
+        .saved-conversation-item:hover {
+            background: #e9ecef;
+            transform: translateX(-2px);
+        }
+
+        .saved-conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .saved-conversation-title {
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+            flex: 1;
+            margin-left: 10px;
+        }
+
+        .saved-conversation-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .saved-conversation-action {
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .saved-conversation-action:hover {
+            background: #dee2e6;
+        }
+
+        .saved-conversation-action.delete:hover {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+
+        .saved-conversation-info {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        .saved-conversation-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 11px;
+            color: #6c757d;
+            margin-top: 6px;
+        }
+
+        .no-saved-conversations {
+            text-align: center;
+            color: #6c757d;
+            padding: 30px 20px;
+            font-size: 14px;
+        }
+
         @media (prefers-color-scheme: dark) {
             .content, .header {
                 background: rgba(33, 37, 41, 0.95);
@@ -410,7 +513,7 @@
 <body>
     <div class="header">
         <div class="logo">💬 Genspark Conversation Manager</div>
-        <div class="version">גרסה 2.4</div>
+        <div class="version">גרסה 2.5</div>
     </div>
 
     <div class="content">
@@ -428,6 +531,10 @@
             <div class="stat-item">
                 <div class="stat-number" id="messageCount">0</div>
                 <div class="stat-label">הודעות בשיחה</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="savedCount">0</div>
+                <div class="stat-label">שיחות שמורות</div>
             </div>
         </div>
 
@@ -452,6 +559,36 @@
                 חפש
             </button>
             <div id="searchResults" class="search-results"></div>
+        </div>
+
+        <!-- Conversation Manager Section -->
+        <div class="manager-section" id="managerSection" style="display: none;">
+            <div class="section-title">📚 מנהל שיחות</div>
+            <div class="button-group">
+                <button class="btn btn-success" id="saveConversationBtn" disabled>
+                    <span class="icon">💾</span>
+                    שמור שיחה נוכחית
+                </button>
+
+                <button class="btn btn-primary" id="viewSavedBtn" disabled>
+                    <span class="icon">📚</span>
+                    צפה בשיחות שמורות
+                </button>
+
+                <button class="btn btn-secondary" id="downloadAllBtn" disabled>
+                    <span class="icon">📦</span>
+                    הורד את כל השיחות
+                </button>
+            </div>
+        </div>
+
+        <!-- Saved Conversations List -->
+        <div class="saved-conversations-container" id="savedConversationsContainer" style="display: none;">
+            <div class="search-header">
+                <span class="search-title">📚 שיחות שמורות</span>
+                <button class="close-search" id="closeSaved">✕</button>
+            </div>
+            <div id="savedConversationsList" class="saved-conversations-list"></div>
         </div>
 
         <div class="button-group">
