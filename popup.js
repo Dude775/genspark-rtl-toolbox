@@ -8,6 +8,7 @@ class PopupManager {
         this.isConnected = false;
         this.currentTab = null;
         this.stats = { messageCount: 0 };
+        this.currentSearchMode = 'conversation'; // 'conversation' or 'all'
 
         this.elements = {};
         this.init();
@@ -38,6 +39,8 @@ class PopupManager {
             searchBtn: document.getElementById('searchBtn'),
             closeSearch: document.getElementById('closeSearch'),
             searchResults: document.getElementById('searchResults'),
+            searchModeConversation: document.getElementById('searchModeConversation'),
+            searchModeAll: document.getElementById('searchModeAll'),
             loading: document.getElementById('loading'),
             message: document.getElementById('message')
         };
@@ -84,6 +87,16 @@ class PopupManager {
             if (e.key === 'Enter') {
                 this.performSearch();
             }
+        });
+
+        // מצב חיפוש - בשיחה הנוכחית
+        this.elements.searchModeConversation?.addEventListener('click', () => {
+            this.setSearchMode('conversation');
+        });
+
+        // מצב חיפוש - בכל השיחות
+        this.elements.searchModeAll?.addEventListener('click', () => {
+            this.setSearchMode('all');
         });
     }
 
@@ -265,6 +278,27 @@ class PopupManager {
         this.elements.searchResults.innerHTML = '';
     }
 
+    setSearchMode(mode) {
+        this.currentSearchMode = mode;
+
+        // עדכן כפתורי מצב
+        if (mode === 'conversation') {
+            this.elements.searchModeConversation?.classList.add('active');
+            this.elements.searchModeAll?.classList.remove('active');
+            this.elements.searchInput.placeholder = 'הקלד טקסט או מילה לחיפוש בשיחה...';
+        } else {
+            this.elements.searchModeConversation?.classList.remove('active');
+            this.elements.searchModeAll?.classList.add('active');
+            this.elements.searchInput.placeholder = 'הקלד טקסט או מילה לחיפוש בכל השיחות...';
+        }
+
+        // נקה תוצאות קודמות
+        this.elements.searchResults.innerHTML = '';
+        this.elements.searchInput.value = '';
+
+        console.log(`🔍 מצב חיפוש שונה ל: ${mode === 'conversation' ? 'שיחה נוכחית' : 'כל השיחות'}`);
+    }
+
     async performSearch() {
         const query = this.elements.searchInput.value.trim();
 
@@ -277,12 +311,24 @@ class PopupManager {
             this.showLoading(true);
             this.elements.searchResults.innerHTML = '<div class="search-no-results">מחפש...</div>';
 
-            const response = await this.sendMessageToTab('search', { query });
+            if (this.currentSearchMode === 'conversation') {
+                // חיפוש בשיחה הנוכחית
+                const response = await this.sendMessageToTab('search', { query });
 
-            if (response && response.success) {
-                this.displaySearchResults(response.results, query);
+                if (response && response.success) {
+                    this.displaySearchResults(response.results, query);
+                } else {
+                    throw new Error('כשל בחיפוש בשיחה');
+                }
             } else {
-                throw new Error('כשל בחיפוש');
+                // חיפוש בכל השיחות
+                const response = await this.sendMessageToTab('searchAll', { query });
+
+                if (response && response.success) {
+                    this.displayAllSearchResults(response.results, query);
+                } else {
+                    throw new Error('כשל בחיפוש בכל השיחות');
+                }
             }
 
         } catch (error) {
@@ -327,6 +373,70 @@ class PopupManager {
         });
 
         this.showMessage(`✅ נמצאו ${results.length} תוצאות`, 'success');
+    }
+
+    displayAllSearchResults(results, query) {
+        if (!results || results.length === 0) {
+            this.elements.searchResults.innerHTML = '<div class="search-no-results">לא נמצאו תוצאות בשיחות</div>';
+            return;
+        }
+
+        let html = '';
+
+        results.forEach((result) => {
+            // הדגש את המילה שחיפשנו
+            const highlightedSnippet = this.highlightText(result.snippet, query);
+            const highlightedTitle = this.highlightText(result.title, query);
+
+            // תצוגת ציון התאמה
+            let matchBadge = '';
+            if (result.score >= 100) {
+                matchBadge = '<span class="search-match-score">⭐ התאמה מלאה</span>';
+            } else if (result.score >= 80) {
+                matchBadge = '<span class="search-match-score">✓ התאמה חלקית</span>';
+            }
+
+            html += `
+                <div class="search-result-item" data-conversation-id="${result.conversationId}">
+                    <div class="search-result-type">
+                        ${matchBadge}
+                        💬 ${highlightedTitle}
+                    </div>
+                    <div class="search-result-content">${highlightedSnippet}</div>
+                </div>
+            `;
+        });
+
+        this.elements.searchResults.innerHTML = html;
+
+        // הוסף event listeners לתוצאות
+        this.elements.searchResults.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const conversationId = item.dataset.conversationId;
+                this.navigateToConversation(conversationId);
+            });
+        });
+
+        this.showMessage(`✅ נמצאו ${results.length} תוצאות ב-${results.length} שיחות`, 'success');
+    }
+
+    async navigateToConversation(conversationId) {
+        try {
+            this.showMessage('מנווט לשיחה...', 'info');
+
+            await this.sendMessageToTab('navigateToConversation', { conversationId });
+
+            this.showMessage('✅ ניווט לשיחה הושלם', 'success');
+
+            // סגור את פאנל החיפוש אחרי כמה שניות
+            setTimeout(() => {
+                this.closeSearchPanel();
+            }, 1500);
+
+        } catch (error) {
+            console.error('Navigation failed:', error);
+            this.showMessage('❌ שגיאה בניווט לשיחה', 'error');
+        }
     }
 
     highlightText(text, query) {

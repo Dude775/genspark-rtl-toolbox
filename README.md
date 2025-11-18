@@ -14,11 +14,17 @@
 ## ✨ Features
 
 ### 🔍 **Advanced Search**
-- **Full-text search** across all your Genspark conversations
-- **Keyword search** to find specific messages instantly
+- **Two search modes**:
+  - **In-Conversation Search** - Search within the current conversation
+  - **Cross-Conversation Search** - Search across ALL conversations in your sidebar
+- **Full-text search** with fuzzy matching for both Hebrew and English
+- **Smart scoring system**:
+  - ⭐ Exact match (score: 100)
+  - ✓ Partial match (score: 80)
+  - ~ Fuzzy match (score: 60)
 - **Context highlighting** shows surrounding text for each result
-- **Smart navigation** - click any result to jump directly to that message in the conversation
-- **Real-time search** with instant results as you type (Enter to search)
+- **Smart navigation** - click any result to jump directly to that message or conversation
+- **Real-time search** with instant results (press Enter to search)
 
 ### 💾 **Flexible Downloads**
 - **Three download formats**:
@@ -59,12 +65,25 @@
 ## 📖 Usage
 
 ### Search Conversations
+
+**In-Conversation Search:**
 1. Navigate to any conversation on [Genspark.ai](https://genspark.ai)
 2. Click the extension icon in your toolbar
 3. Click "חיפוש בשיחה" (Search in Conversation)
-4. Enter your search term (word or phrase)
-5. Click "חפש" or press Enter
-6. Click any result to jump to that message in the conversation!
+4. Make sure "💬 בשיחה הנוכחית" mode is selected
+5. Enter your search term (word or phrase)
+6. Click "חפש" or press Enter
+7. Click any result to jump to that message in the conversation
+
+**Cross-Conversation Search:**
+1. Navigate to [Genspark.ai](https://genspark.ai) (any page with sidebar)
+2. Click the extension icon in your toolbar
+3. Click "חיפוש בשיחה" (Search)
+4. Click "📋 בכל השיחות" (All Conversations) mode
+5. Enter your search term (word or phrase)
+6. Click "חפש" or press Enter
+7. Browse results showing matches across all conversations
+8. Click any result to navigate directly to that conversation
 
 ### Download Conversations
 1. Open any conversation on Genspark.ai
@@ -78,8 +97,12 @@
 ### Quick Tips
 - Use **Enter key** for faster searching
 - Search supports both **Hebrew and English**
+- **Switch between search modes** using the toggle buttons:
+  - 💬 **In-Conversation** - Search current conversation only
+  - 📋 **All Conversations** - Search across sidebar conversations
 - Downloaded files include **date in filename** for easy organization
 - Search results show **context** (50 characters before/after match)
+- **Match scores** help identify best results (⭐ exact, ✓ partial, ~ fuzzy)
 - Click **X** to close search panel
 
 ---
@@ -193,10 +216,12 @@ cd genspark-rtl-toolbox
 ### v2.4 (Current) - November 2024
 - ✅ **Removed RTL algorithm** (simplified extension)
 - ✅ **Fixed download duplication** - no more 4x downloads!
-- ✅ **Added full-text search** with context highlighting
-- ✅ **Added keyword search** for quick finding
-- ✅ **Added message navigation** - click to jump to message
-- ✅ **Improved UI** with dedicated search panel
+- ✅ **Added dual search modes**:
+  - In-conversation search with context highlighting
+  - Cross-conversation search across ALL sidebar conversations
+- ✅ **Fuzzy matching algorithm** with smart scoring (exact/partial/fuzzy)
+- ✅ **Added message navigation** - click to jump to message or conversation
+- ✅ **Improved UI** with dedicated search panel and mode toggle
 - ✅ **Renamed extension** to "Conversation Manager"
 - ✅ **Better error messages** in Hebrew and English
 
@@ -242,11 +267,12 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 🎯 Future Plans
 
+- [x] ~~Multi-conversation search~~ ✅ **Completed in v2.4**
 - [ ] Export to PDF format
 - [ ] Conversation tagging and categorization
-- [ ] Multi-conversation search
 - [ ] Cloud sync for saved conversations
 - [ ] Advanced filters (date range, user/AI only, etc.)
+- [ ] Search history and saved searches
 
 ---
 

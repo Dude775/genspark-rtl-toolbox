@@ -358,6 +358,42 @@
             font-size: 14px;
         }
 
+        .search-mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .search-mode-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #6c757d;
+        }
+
+        .search-mode-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .search-mode-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .search-match-score {
+            font-size: 10px;
+            color: #28a745;
+            margin-right: 5px;
+        }
+
         @media (prefers-color-scheme: dark) {
             .content, .header {
                 background: rgba(33, 37, 41, 0.95);
@@ -397,9 +433,19 @@
 
         <div class="search-container" id="searchContainer" style="display: none;">
             <div class="search-header">
-                <span class="search-title">🔍 חיפוש בשיחה</span>
+                <span class="search-title">🔍 חיפוש</span>
                 <button class="close-search" id="closeSearch">✕</button>
             </div>
+
+            <div class="search-mode-toggle">
+                <button class="search-mode-btn active" id="searchModeConversation">
+                    💬 בשיחה הנוכחית
+                </button>
+                <button class="search-mode-btn" id="searchModeAll">
+                    📋 בכל השיחות
+                </button>
+            </div>
+
             <input type="text" id="searchInput" class="search-input" placeholder="הקלד טקסט או מילה לחיפוש..." />
             <button class="btn btn-secondary" id="searchBtn">
                 <span class="icon">🔎</span>
