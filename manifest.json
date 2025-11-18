@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Genspark RTL Toolbox",
-  "version": "2.3",
-  "description": "תוסף לתמיכה בעברית ו-RTL באתר Genspark.ai עם יכולות הורדת שיחות",
+  "name": "Genspark Conversation Manager",
+  "version": "2.4",
+  "description": "ניהול מתקדם של שיחות Genspark - הורדה, חיפוש ושמירת שיחות",
 
   "permissions": [
     "storage",
@@ -24,7 +24,7 @@
 
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Genspark RTL Toolbox"
+    "default_title": "Genspark Conversation Manager"
   },
 
   "background": {

@@ -1,5 +1,5 @@
 /**
- * Genspark RTL Toolbox v2.3 - Popup Script
+ * Genspark Conversation Manager v2.4 - Popup Script
  * לוגיקת ממשק המשתמש של התוסף
  */
 
@@ -423,4 +423,4 @@ window.addEventListener('error', (event) => {
 });
 
 // Log לצורך דיבוג
-console.log('🎮 Genspark Download Toolbox Popup v2.3 נטען');
+console.log('🎮 Genspark Conversation Manager Popup v2.4 נטען');
