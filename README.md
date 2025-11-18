@@ -143,14 +143,13 @@ cd genspark-rtl-toolbox
 
 ---
 
-## 🐛 Troubleshooting
+1. הורד או שכפל את התוסף.
+2. טען כתוסף בדפדפן דרך מצב מפתחים.
+3. השתמש בממשק להורדות ולחיפוש.
 
-### Common Issues
+## תצורה
 
-**Extension not working on Genspark.ai?**
-- Refresh the page after installing
-- Make sure you're on genspark.ai (not other domains)
-- Check if extension is enabled in Chrome
+ניתן להגדיר הגדרות ברירת מחדל ב-background.js.
 
 **Search not finding results?**
 - Make sure the conversation has loaded completely
