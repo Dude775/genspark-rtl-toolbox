@@ -1,11 +1,11 @@
 /**
- * Genspark Download Toolbox v2.3 - Background Service Worker
+ * Genspark Conversation Manager v2.4 - Background Service Worker
  * שירות רקע לניהול התוסף
  */
 
 class BackgroundService {
     constructor() {
-        this.version = '2.3';
+        this.version = '2.4';
         this.isActive = true;
         this.tabStates = new Map();
 
@@ -249,8 +249,8 @@ class BackgroundService {
             chrome.notifications.create({
                 type: 'basic',
                 iconUrl: 'icon48.png',
-                title: 'ברוכים הבאים ל-Genspark Download Toolbox!',
-                message: 'התוסף הותקן בהצלחה. כעת תוכלו להוריד ולנהל את השיחות שלכם מ-Genspark.ai'
+                title: 'ברוכים הבאים ל-Genspark Conversation Manager!',
+                message: 'התוסף הותקן בהצלחה. כעת תוכלו לחפש, להוריד ולנהל את השיחות שלכם מ-Genspark.ai'
             });
         }
     }
@@ -260,8 +260,8 @@ class BackgroundService {
             chrome.notifications.create({
                 type: 'basic',
                 iconUrl: 'icon48.png',
-                title: 'Genspark Download Toolbox עודכן!',
-                message: `התוסף עודכן מגרסה ${previousVersion} לגרסה ${this.version} עם שיפורים חדשים`
+                title: 'Genspark Conversation Manager עודכן!',
+                message: `התוסף עודכן מגרסה ${previousVersion} לגרסה ${this.version} עם פיצ'רים חדשים`
             });
         }
     }
@@ -314,4 +314,4 @@ self.addEventListener('beforeunload', () => {
     console.log('Background service נכנס להשעיה');
 });
 
-console.log('🚀 Genspark Download Toolbox Background Service v2.3 פעיל');
+console.log('🚀 Genspark Conversation Manager Background Service v2.4 פעיל');

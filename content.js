@@ -1,6 +1,6 @@
 /**
- * Genspark RTL Toolbox v2.3 - Content Script
- * תוסף לתמיכה בעברית ו-RTL באתר Genspark.ai עם יכולות הורדת שיחות מתקדמות
+ * Genspark Conversation Manager v2.4 - Content Script
+ * ניהול מתקדם של שיחות Genspark - הורדה, חיפוש ושמירת שיחות
  */
 
 class GensparkRTLToolbox {
@@ -74,7 +74,7 @@ class GensparkRTLToolbox {
     async init() {
         if (this.isInitialized) return;
 
-        console.log('🚀 Genspark Download Toolbox v2.3 מתחיל...');
+        console.log('🚀 Genspark Conversation Manager v2.4 מתחיל...');
 
         // המתן לטעינת הדף
         if (document.readyState === 'loading') {
@@ -91,7 +91,7 @@ class GensparkRTLToolbox {
         this.setupMessageListeners();
         this.observeChanges();
 
-        console.log('✅ Genspark Download Toolbox v2.3 הופעל בהצלחה');
+        console.log('✅ Genspark Conversation Manager v2.4 הופעל בהצלחה');
     }
 
     // זיהוי הודעות עם סלקטורים מרובים
@@ -519,8 +519,8 @@ class GensparkRTLToolbox {
 // אתחול התוסף
 if (typeof window !== 'undefined') {
     // וודא שהתוסף לא רץ כבר
-    if (!window.gensparkDownloadToolbox) {
-        window.gensparkDownloadToolbox = new GensparkRTLToolbox();
-        console.log('🎯 Genspark Download Toolbox v2.3 אותחל');
+    if (!window.gensparkConversationManager) {
+        window.gensparkConversationManager = new GensparkRTLToolbox();
+        console.log('🎯 Genspark Conversation Manager v2.4 אותחל');
     }
 }
