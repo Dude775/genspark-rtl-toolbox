@@ -364,7 +364,7 @@ class GensparkRTLToolbox {
         document.body.appendChild(button);
     }
 
-    // חיפוש בשיחות
+    // חיפוש בשיחות (בשיחה הנוכחית)
     searchConversation(query) {
         if (!query || query.trim() === '') {
             return [];
@@ -404,7 +404,225 @@ class GensparkRTLToolbox {
         return results;
     }
 
-    // הדגשת הודעה בדף
+    // חילוץ כל השיחות מהסיידבר
+    extractAllConversations() {
+        console.log('📋 מחלץ כל השיחות מהסיידבר...');
+
+        const conversations = [];
+
+        // סלקטורים לאיתור פריטי תפריט בסיידבר
+        const sidebarSelectors = [
+            '.menu-item',
+            '[class*="menu-item"]',
+            '[class*="conversation-item"]',
+            '[class*="chat-item"]',
+            'li[role="menuitem"]',
+            '.sidebar-item',
+            '[data-conversation-id]'
+        ];
+
+        let menuItems = [];
+
+        // נסה למצוא פריטי תפריט
+        for (const selector of sidebarSelectors) {
+            try {
+                const items = document.querySelectorAll(selector);
+                if (items.length > 0) {
+                    menuItems = Array.from(items);
+                    console.log(`✅ נמצאו ${items.length} פריטים עם הסלקטור: ${selector}`);
+                    break;
+                }
+            } catch (e) {
+                console.warn(`Selector failed: ${selector}`, e);
+            }
+        }
+
+        // אם לא נמצא, חפש בצורה יותר כללית
+        if (menuItems.length === 0) {
+            console.log('🔍 מחפש פריטים בדרך כללית...');
+            const sidebar = document.querySelector('aside, [role="navigation"], .sidebar, nav');
+            if (sidebar) {
+                menuItems = Array.from(sidebar.querySelectorAll('li, div[role="button"], a'));
+                console.log(`📌 נמצאו ${menuItems.length} פריטים פוטנציאליים בסיידבר`);
+            }
+        }
+
+        menuItems.forEach((item, index) => {
+            try {
+                // חלץ טקסט
+                const text = item.textContent || item.innerText || '';
+
+                // דלג על פריטים ריקים או קצרים מדי
+                if (text.trim().length < 3) return;
+
+                // נסה לחלץ כותרת
+                const titleElement = item.querySelector('h1, h2, h3, h4, h5, h6, .title, [class*="title"], strong, b');
+                const title = titleElement ? titleElement.textContent.trim() : text.split('\n')[0].trim();
+
+                // נסה לחלץ תאריך
+                const dateElement = item.querySelector('time, .date, [class*="date"], [class*="time"], small');
+                const date = dateElement ? dateElement.textContent.trim() : '';
+
+                // נסה לחלץ URL או ID
+                const link = item.querySelector('a');
+                const url = link ? link.href : '';
+                const id = item.getAttribute('data-conversation-id') ||
+                          item.getAttribute('data-id') ||
+                          item.id ||
+                          `item-${index}`;
+
+                // שמור את האלמנט DOM למטרת ניווט
+                conversations.push({
+                    id: id,
+                    title: title,
+                    date: date,
+                    fullText: text.trim(),
+                    url: url,
+                    element: item,
+                    index: index
+                });
+
+            } catch (e) {
+                console.warn('שגיאה בעיבוד פריט:', e);
+            }
+        });
+
+        console.log(`✅ חולצו ${conversations.length} שיחות מהסיידבר`);
+        return conversations;
+    }
+
+    // חיפוש חכם בכל השיחות (סיידבר)
+    searchAllConversations(query) {
+        if (!query || query.trim() === '') {
+            return [];
+        }
+
+        const allConversations = this.extractAllConversations();
+        const searchQuery = query.toLowerCase().trim();
+        const results = [];
+
+        // פונקצית התאמה גמישה
+        const fuzzyMatch = (text, query) => {
+            const lowerText = text.toLowerCase();
+
+            // התאמה מדויקת
+            if (lowerText.includes(query)) {
+                return { match: true, score: 100, exactMatch: true };
+            }
+
+            // התאמה חלקית - מילים נפרדות
+            const queryWords = query.split(/\s+/);
+            const matchedWords = queryWords.filter(word =>
+                lowerText.includes(word) && word.length > 2
+            );
+
+            if (matchedWords.length > 0) {
+                const score = (matchedWords.length / queryWords.length) * 80;
+                return { match: true, score: score, exactMatch: false };
+            }
+
+            // התאמה fuzzy - אותיות סמוכות
+            let matchScore = 0;
+            let lastIndex = -1;
+
+            for (const char of query) {
+                const index = lowerText.indexOf(char, lastIndex + 1);
+                if (index > lastIndex) {
+                    matchScore++;
+                    lastIndex = index;
+                }
+            }
+
+            const fuzzyScore = (matchScore / query.length) * 60;
+            if (fuzzyScore > 40) {
+                return { match: true, score: fuzzyScore, exactMatch: false };
+            }
+
+            return { match: false, score: 0 };
+        };
+
+        allConversations.forEach((conversation) => {
+            // חפש בכותרת
+            const titleMatch = fuzzyMatch(conversation.title, searchQuery);
+
+            // חפש בטקסט המלא
+            const textMatch = fuzzyMatch(conversation.fullText, searchQuery);
+
+            // קח את ההתאמה הטובה ביותר
+            const bestMatch = titleMatch.score > textMatch.score ? titleMatch : textMatch;
+
+            if (bestMatch.match) {
+                // צור snippet עם הקשר
+                let snippet = '';
+                const lowerFullText = conversation.fullText.toLowerCase();
+                const matchIndex = lowerFullText.indexOf(searchQuery);
+
+                if (matchIndex !== -1) {
+                    const start = Math.max(0, matchIndex - 40);
+                    const end = Math.min(conversation.fullText.length, matchIndex + searchQuery.length + 40);
+                    snippet = conversation.fullText.substring(start, end);
+
+                    if (start > 0) snippet = '...' + snippet;
+                    if (end < conversation.fullText.length) snippet = snippet + '...';
+                } else {
+                    // אם אין התאמה מדויקת, קח את ההתחלה
+                    snippet = conversation.title;
+                }
+
+                results.push({
+                    ...conversation,
+                    snippet: snippet,
+                    matchScore: bestMatch.score,
+                    exactMatch: bestMatch.exactMatch,
+                    matchedIn: titleMatch.score > textMatch.score ? 'title' : 'content'
+                });
+            }
+        });
+
+        // מיין לפי ציון התאמה
+        results.sort((a, b) => b.matchScore - a.matchScore);
+
+        console.log(`🔍 נמצאו ${results.length} שיחות עבור: "${query}"`);
+        return results;
+    }
+
+    // ניווט לשיחה בסיידבר
+    navigateToConversation(conversationId) {
+        const allConversations = this.extractAllConversations();
+        const conversation = allConversations.find(c => c.id === conversationId);
+
+        if (!conversation || !conversation.element) {
+            console.error('❌ לא נמצאה שיחה עם ID:', conversationId);
+            return;
+        }
+
+        // גלול לשיחה בסיידבר
+        conversation.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // הדגש את השיחה
+        const originalBg = conversation.element.style.backgroundColor;
+        const originalBorder = conversation.element.style.border;
+
+        conversation.element.style.transition = 'all 0.3s';
+        conversation.element.style.backgroundColor = '#fff3cd';
+        conversation.element.style.border = '2px solid #667eea';
+
+        setTimeout(() => {
+            conversation.element.style.backgroundColor = originalBg;
+            conversation.element.style.border = originalBorder;
+        }, 2000);
+
+        // אם יש לינק, לחץ עליו לפתיחת השיחה
+        const link = conversation.element.querySelector('a');
+        if (link) {
+            setTimeout(() => {
+                link.click();
+                console.log('✅ נווטתי לשיחה:', conversation.title);
+            }, 500);
+        }
+    }
+
+    // הדגשת הודעה בדף (בשיחה הנוכחית)
     highlightMessage(messageIndex) {
         const conversations = this.extractConversation();
 
@@ -499,6 +717,32 @@ class GensparkRTLToolbox {
                     sendResponse({
                         success: true,
                         results: searchResults
+                    });
+                    break;
+
+                case 'searchAll':
+                    const allResults = this.searchAllConversations(request.query);
+                    sendResponse({
+                        success: true,
+                        results: allResults
+                    });
+                    break;
+
+                case 'navigateToConversation':
+                    this.navigateToConversation(request.conversationId);
+                    sendResponse({ success: true });
+                    break;
+
+                case 'getAllConversations':
+                    const allConversations = this.extractAllConversations();
+                    sendResponse({
+                        success: true,
+                        count: allConversations.length,
+                        conversations: allConversations.map(c => ({
+                            id: c.id,
+                            title: c.title,
+                            date: c.date
+                        }))
                     });
                     break;
 
