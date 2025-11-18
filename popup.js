@@ -29,6 +29,7 @@ class PopupManager {
             statusInfo: document.getElementById('statusInfo'),
             statsGrid: document.getElementById('statsGrid'),
             messageCount: document.getElementById('messageCount'),
+            savedCount: document.getElementById('savedCount'),
             downloadBtn: document.getElementById('downloadBtn'),
             downloadJsonBtn: document.getElementById('downloadJsonBtn'),
             downloadTxtBtn: document.getElementById('downloadTxtBtn'),
@@ -128,6 +129,7 @@ class PopupManager {
                 this.updateStatus('✅', 'מחובר בהצלחה', `התוסף פועל (${response.version || 'לא ידוע'})`);
                 this.setButtonsEnabled(true);
                 await this.loadStats();
+                await this.loadSavedConversationsCount();
             } else {
                 throw new Error('התוסף לא מגיב');
             }
@@ -490,7 +492,10 @@ class PopupManager {
             this.elements.downloadBtn,
             this.elements.downloadJsonBtn,
             this.elements.downloadTxtBtn,
-            this.elements.toggleSearchBtn
+            this.elements.toggleSearchBtn,
+            this.elements.saveConversationBtn,
+            this.elements.viewSavedBtn,
+            this.elements.downloadAllBtn
         ];
 
         buttons.forEach(button => {
@@ -498,6 +503,11 @@ class PopupManager {
                 button.disabled = !enabled;
             }
         });
+
+        // הצג את מנהל השיחות אם יש חיבור
+        if (this.elements.managerSection) {
+            this.elements.managerSection.style.display = enabled ? 'block' : 'none';
+        }
     }
 
     showLoading(show) {
@@ -519,6 +529,253 @@ class PopupManager {
                 this.elements.message.style.display = 'none';
             }
         }, 3000);
+    }
+
+    // Conversation Manager Functions
+    async saveConversation() {
+        try {
+            if (!this.isConnected) {
+                throw new Error('אין חיבור לתוסף');
+            }
+
+            this.showLoading(true);
+            this.showMessage('שומר שיחה...', 'info');
+
+            const response = await this.sendMessageToTab('saveConversation');
+
+            if (response && response.success) {
+                this.showMessage(`✅ שיחה נשמרה בהצלחה! (${response.messageCount} הודעות)`, 'success');
+                await this.loadSavedConversationsCount();
+            } else {
+                throw new Error(response.error || 'כשל בשמירת השיחה');
+            }
+
+        } catch (error) {
+            console.error('Save conversation failed:', error);
+            this.showMessage('❌ שגיאה בשמירת שיחה: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async loadSavedConversationsCount() {
+        try {
+            const stored = await chrome.storage.local.get(['savedConversations']);
+            const savedConversations = stored.savedConversations || [];
+
+            if (this.elements.savedCount) {
+                this.elements.savedCount.textContent = savedConversations.length;
+            }
+
+            return savedConversations.length;
+
+        } catch (error) {
+            console.error('Failed to load saved conversations count:', error);
+            return 0;
+        }
+    }
+
+    async viewSavedConversations() {
+        try {
+            this.showLoading(true);
+
+            const stored = await chrome.storage.local.get(['savedConversations']);
+            const savedConversations = stored.savedConversations || [];
+
+            if (savedConversations.length === 0) {
+                this.elements.savedConversationsList.innerHTML = `
+                    <div class="no-saved-conversations">
+                        אין שיחות שמורות<br>
+                        שמור שיחה נוכחית כדי להתחיל
+                    </div>
+                `;
+            } else {
+                let html = '';
+
+                savedConversations.forEach((conv, index) => {
+                    const savedDate = new Date(conv.savedAt);
+                    const dateStr = savedDate.toLocaleDateString('he-IL');
+                    const timeStr = savedDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+                    html += `
+                        <div class="saved-conversation-item" data-index="${index}" data-id="${conv.id}">
+                            <div class="saved-conversation-header">
+                                <div class="saved-conversation-title">${conv.title}</div>
+                                <div class="saved-conversation-actions">
+                                    <button class="saved-conversation-action open" title="פתח שיחה" data-index="${index}">
+                                        🔗
+                                    </button>
+                                    <button class="saved-conversation-action delete" title="מחק שיחה" data-index="${index}">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="saved-conversation-meta">
+                                <span>📅 ${dateStr}</span>
+                                <span>⏰ ${timeStr}</span>
+                                <span>💬 ${conv.messageCount} הודעות</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                this.elements.savedConversationsList.innerHTML = html;
+
+                // הוסף event listeners לפעולות
+                this.elements.savedConversationsList.querySelectorAll('.saved-conversation-action.open').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const index = parseInt(btn.dataset.index);
+                        this.openConversation(savedConversations[index]);
+                    });
+                });
+
+                this.elements.savedConversationsList.querySelectorAll('.saved-conversation-action.delete').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const index = parseInt(btn.dataset.index);
+                        this.deleteConversation(index);
+                    });
+                });
+            }
+
+            // הצג את הקונטיינר
+            this.elements.savedConversationsContainer.style.display = 'block';
+
+        } catch (error) {
+            console.error('Failed to view saved conversations:', error);
+            this.showMessage('❌ שגיאה בטעינת שיחות שמורות', 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    closeSavedConversations() {
+        this.elements.savedConversationsContainer.style.display = 'none';
+    }
+
+    async deleteConversation(index) {
+        try {
+            if (!confirm('האם אתה בטוח שברצונך למחוק שיחה זו?')) {
+                return;
+            }
+
+            this.showLoading(true);
+
+            const stored = await chrome.storage.local.get(['savedConversations']);
+            const savedConversations = stored.savedConversations || [];
+
+            savedConversations.splice(index, 1);
+
+            await chrome.storage.local.set({ savedConversations: savedConversations });
+
+            this.showMessage('✅ שיחה נמחקה בהצלחה', 'success');
+
+            // רענן את התצוגה
+            await this.loadSavedConversationsCount();
+            await this.viewSavedConversations();
+
+        } catch (error) {
+            console.error('Failed to delete conversation:', error);
+            this.showMessage('❌ שגיאה במחיקת שיחה', 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    openConversation(conversation) {
+        if (conversation.url) {
+            chrome.tabs.create({ url: conversation.url });
+            this.showMessage('✅ פותח שיחה בטאב חדש...', 'success');
+        } else {
+            this.showMessage('⚠️ אין URL זמין לשיחה זו', 'error');
+        }
+    }
+
+    async downloadAllConversations() {
+        try {
+            if (!confirm('האם אתה בטוח שברצונך להוריד את כל השיחות השמורות?')) {
+                return;
+            }
+
+            this.showLoading(true);
+            this.showMessage('מוריד את כל השיחות...', 'info');
+
+            const stored = await chrome.storage.local.get(['savedConversations']);
+            const savedConversations = stored.savedConversations || [];
+
+            if (savedConversations.length === 0) {
+                throw new Error('אין שיחות שמורות להורדה');
+            }
+
+            // צור קובץ JSON עם כל השיחות
+            const allConversationsData = {
+                exportDate: new Date().toISOString(),
+                totalConversations: savedConversations.length,
+                conversations: savedConversations
+            };
+
+            const jsonContent = JSON.stringify(allConversationsData, null, 2);
+            const txtContent = this.convertAllConversationsToText(savedConversations);
+
+            // הורד JSON
+            const jsonBlob = new Blob([jsonContent], { type: 'application/json' });
+            const jsonUrl = URL.createObjectURL(jsonBlob);
+            const jsonFilename = `genspark_all_conversations_${new Date().toISOString().split('T')[0]}.json`;
+
+            chrome.downloads.download({
+                url: jsonUrl,
+                filename: jsonFilename,
+                saveAs: true
+            });
+
+            // הורד TXT
+            const txtBlob = new Blob([txtContent], { type: 'text/plain; charset=utf-8' });
+            const txtUrl = URL.createObjectURL(txtBlob);
+            const txtFilename = `genspark_all_conversations_${new Date().toISOString().split('T')[0]}.txt`;
+
+            chrome.downloads.download({
+                url: txtUrl,
+                filename: txtFilename,
+                saveAs: true
+            });
+
+            this.showMessage(`✅ ${savedConversations.length} שיחות הורדו בהצלחה!`, 'success');
+
+        } catch (error) {
+            console.error('Download all conversations failed:', error);
+            this.showMessage('❌ שגיאה בהורדת שיחות: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    convertAllConversationsToText(conversations) {
+        let text = '='.repeat(80) + '\n';
+        text += 'כל השיחות השמורות - Genspark Conversation Manager\n';
+        text += `תאריך ייצוא: ${new Date().toLocaleString('he-IL')}\n`;
+        text += `סך הכל שיחות: ${conversations.length}\n`;
+        text += '='.repeat(80) + '\n\n';
+
+        conversations.forEach((conv, index) => {
+            text += `\n${'='.repeat(80)}\n`;
+            text += `שיחה #${index + 1}: ${conv.title}\n`;
+            text += `נשמר ב: ${new Date(conv.savedAt).toLocaleString('he-IL')}\n`;
+            text += `כמות הודעות: ${conv.messageCount}\n`;
+            text += `URL: ${conv.url}\n`;
+            text += '='.repeat(80) + '\n\n';
+
+            conv.messages.forEach((msg, msgIndex) => {
+                const type = msg.type === 'user' ? 'משתמש' : 'AI';
+                text += `[${msgIndex + 1}] ${type}:\n`;
+                text += `${msg.text}\n`;
+                text += '-'.repeat(80) + '\n';
+            });
+
+            text += '\n';
+        });
+
+        return text;
     }
 }
 

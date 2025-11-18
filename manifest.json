@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Genspark Conversation Manager",
-  "version": "2.4",
-  "description": "ניהול מתקדם של שיחות Genspark - הורדה, חיפוש ושמירת שיחות",
+  "version": "2.5",
+  "description": "ניהול מתקדם של שיחות Genspark - הורדה, חיפוש, שמירה וניהול שיחות",
 
   "permissions": [
     "storage",

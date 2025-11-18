@@ -697,7 +697,7 @@ class GensparkRTLToolbox {
 
             switch (request.action) {
                 case 'ping':
-                    sendResponse({ status: 'active', version: '2.3' });
+                    sendResponse({ status: 'active', version: '2.5' });
                     break;
 
                 case 'download':
@@ -757,6 +757,74 @@ class GensparkRTLToolbox {
 
             return true; // שמור על החיבור עבור תגובה אסינכרונית
         });
+    }
+
+    async saveCurrentConversation() {
+        try {
+            console.log('💾 שומר שיחה נוכחית...');
+
+            // חלץ את השיחה הנוכחית
+            const messages = this.extractConversation();
+
+            if (!messages || messages.length === 0) {
+                throw new Error('לא נמצאו הודעות לשמירה');
+            }
+
+            // צור מזהה ייחודי לשיחה
+            const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            // חלץ כותרת שיחה
+            const title = this.getConversationTitle() || `שיחה מ-${new Date().toLocaleDateString('he-IL')}`;
+
+            // צור אובייקט שיחה
+            const conversation = {
+                id: conversationId,
+                title: title,
+                url: window.location.href,
+                savedAt: new Date().toISOString(),
+                messageCount: messages.length,
+                messages: messages
+            };
+
+            // שמור ב-chrome.storage.local
+            const stored = await chrome.storage.local.get(['savedConversations']);
+            const savedConversations = stored.savedConversations || [];
+
+            savedConversations.push(conversation);
+
+            await chrome.storage.local.set({ savedConversations: savedConversations });
+
+            console.log('✅ שיחה נשמרה בהצלחה:', conversationId);
+
+            return {
+                success: true,
+                conversationId: conversationId,
+                messageCount: messages.length,
+                title: title
+            };
+
+        } catch (error) {
+            console.error('❌ שגיאה בשמירת שיחה:', error);
+            throw error;
+        }
+    }
+
+    getConversationTitle() {
+        // נסה למצוא כותרת שיחה
+        for (const selector of this.selectors.chatTitle) {
+            const titleElement = document.querySelector(selector);
+            if (titleElement && titleElement.textContent.trim()) {
+                return titleElement.textContent.trim();
+            }
+        }
+
+        // אם לא נמצא כותרת, השתמש בהודעה הראשונה
+        const firstMessage = this.extractConversation()[0];
+        if (firstMessage && firstMessage.text) {
+            return firstMessage.text.substring(0, 50) + (firstMessage.text.length > 50 ? '...' : '');
+        }
+
+        return null;
     }
 }
 

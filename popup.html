@@ -429,6 +429,10 @@
                 <div class="stat-number" id="messageCount">0</div>
                 <div class="stat-label">הודעות בשיחה</div>
             </div>
+            <div class="stat-item">
+                <div class="stat-number" id="savedCount">0</div>
+                <div class="stat-label">שיחות שמורות</div>
+            </div>
         </div>
 
         <div class="search-container" id="searchContainer" style="display: none;">
@@ -452,6 +456,36 @@
                 חפש
             </button>
             <div id="searchResults" class="search-results"></div>
+        </div>
+
+        <!-- Conversation Manager Section -->
+        <div class="manager-section" id="managerSection" style="display: none;">
+            <div class="section-title">📚 מנהל שיחות</div>
+            <div class="button-group">
+                <button class="btn btn-success" id="saveConversationBtn" disabled>
+                    <span class="icon">💾</span>
+                    שמור שיחה נוכחית
+                </button>
+
+                <button class="btn btn-primary" id="viewSavedBtn" disabled>
+                    <span class="icon">📚</span>
+                    צפה בשיחות שמורות
+                </button>
+
+                <button class="btn btn-secondary" id="downloadAllBtn" disabled>
+                    <span class="icon">📦</span>
+                    הורד את כל השיחות
+                </button>
+            </div>
+        </div>
+
+        <!-- Saved Conversations List -->
+        <div class="saved-conversations-container" id="savedConversationsContainer" style="display: none;">
+            <div class="search-header">
+                <span class="search-title">📚 שיחות שמורות</span>
+                <button class="close-search" id="closeSaved">✕</button>
+            </div>
+            <div id="savedConversationsList" class="saved-conversations-list"></div>
         </div>
 
         <div class="button-group">
