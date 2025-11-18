@@ -1,11 +1,11 @@
 /**
- * Genspark Conversation Manager v2.5 - Background Service Worker
+ * Genspark Conversation Manager v2.4 - Background Service Worker
  * שירות רקע לניהול התוסף
  */
 
 class BackgroundService {
     constructor() {
-        this.version = '2.5';
+        this.version = '2.4';
         this.isActive = true;
         this.tabStates = new Map();
 
@@ -314,4 +314,4 @@ self.addEventListener('beforeunload', () => {
     console.log('Background service נכנס להשעיה');
 });
 
-console.log('🚀 Genspark Conversation Manager Background Service v2.5 פעיל');
+console.log('🚀 Genspark Conversation Manager Background Service v2.4 פעיל');

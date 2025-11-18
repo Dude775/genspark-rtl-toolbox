@@ -1,5 +1,5 @@
 /**
- * Genspark Conversation Manager v2.5 - Popup Script
+ * Genspark Conversation Manager v2.4 - Popup Script
  * לוגיקת ממשק המשתמש של התוסף
  */
 
@@ -42,13 +42,6 @@ class PopupManager {
             searchResults: document.getElementById('searchResults'),
             searchModeConversation: document.getElementById('searchModeConversation'),
             searchModeAll: document.getElementById('searchModeAll'),
-            managerSection: document.getElementById('managerSection'),
-            saveConversationBtn: document.getElementById('saveConversationBtn'),
-            viewSavedBtn: document.getElementById('viewSavedBtn'),
-            downloadAllBtn: document.getElementById('downloadAllBtn'),
-            savedConversationsContainer: document.getElementById('savedConversationsContainer'),
-            savedConversationsList: document.getElementById('savedConversationsList'),
-            closeSaved: document.getElementById('closeSaved'),
             loading: document.getElementById('loading'),
             message: document.getElementById('message')
         };
@@ -105,26 +98,6 @@ class PopupManager {
         // מצב חיפוש - בכל השיחות
         this.elements.searchModeAll?.addEventListener('click', () => {
             this.setSearchMode('all');
-        });
-
-        // כפתור שמירת שיחה
-        this.elements.saveConversationBtn?.addEventListener('click', () => {
-            this.saveConversation();
-        });
-
-        // כפתור צפייה בשיחות שמורות
-        this.elements.viewSavedBtn?.addEventListener('click', () => {
-            this.viewSavedConversations();
-        });
-
-        // כפתור הורדת כל השיחות
-        this.elements.downloadAllBtn?.addEventListener('click', () => {
-            this.downloadAllConversations();
-        });
-
-        // כפתור סגירת רשימת שיחות שמורות
-        this.elements.closeSaved?.addEventListener('click', () => {
-            this.closeSavedConversations();
         });
     }
 
@@ -817,4 +790,4 @@ window.addEventListener('error', (event) => {
 });
 
 // Log לצורך דיבוג
-console.log('🎮 Genspark Conversation Manager Popup v2.5 נטען');
+console.log('🎮 Genspark Conversation Manager Popup v2.4 נטען');

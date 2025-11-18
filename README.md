@@ -36,17 +36,6 @@
 - **Preserve formatting** and message structure
 - **User/AI identification** clearly marked
 
-### 📚 **Conversation Manager**
-- **Save conversations** - Save current conversation with one click
-- **View saved conversations** - Browse all your saved conversations in an organized list
-- **Conversation details** - See title, date, time, and message count for each conversation
-- **Quick actions**:
-  - 🔗 **Open** - Open saved conversation in a new tab
-  - 🗑️ **Delete** - Remove unwanted conversations
-- **Bulk download** - Export ALL saved conversations at once (JSON + TXT)
-- **Persistent storage** - Conversations stored locally in chrome.storage.local
-- **Smart indexing** - Unique conversation IDs and automatic metadata
-
 ### 🎨 **Professional Interface**
 - **Modern popup design** with intuitive controls
 - **Real-time status indicators** and connection feedback
@@ -105,47 +94,12 @@
    - **"הורד TXT בלבד"** - TXT only
 4. Files will be saved to your Downloads folder with timestamp
 
-### Manage Saved Conversations
-
-**Save Current Conversation:**
-1. Navigate to any conversation on [Genspark.ai](https://genspark.ai)
-2. Click the extension icon
-3. Click "💾 שמור שיחה נוכחית" (Save Current Conversation)
-4. Conversation is saved with title, date, and all messages
-
-**View Saved Conversations:**
-1. Click the extension icon
-2. Click "📚 צפה בשיחות שמורות" (View Saved Conversations)
-3. Browse your saved conversations list
-4. Each item shows:
-   - Conversation title
-   - Save date and time
-   - Message count
-   - Action buttons (Open, Delete)
-
-**Open Saved Conversation:**
-- Click the 🔗 button to open the conversation in a new tab
-
-**Delete Saved Conversation:**
-- Click the 🗑️ button to remove the conversation from storage
-
-**Bulk Download All Conversations:**
-1. Click the extension icon
-2. Click "📦 הורד את כל השיחות" (Download All Conversations)
-3. Confirm the action
-4. All saved conversations will be exported to 2 files:
-   - `genspark_all_conversations_YYYY-MM-DD.json` - All conversations in JSON format
-   - `genspark_all_conversations_YYYY-MM-DD.txt` - All conversations in readable text format
-
 ### Quick Tips
 - Use **Enter key** for faster searching
 - Search supports both **Hebrew and English**
 - **Switch between search modes** using the toggle buttons:
   - 💬 **In-Conversation** - Search current conversation only
   - 📋 **All Conversations** - Search across sidebar conversations
-- **Save important conversations** for later reference
-- **View saved conversations count** in the stats panel
-- **Bulk download all** your saved conversations at once
 - Downloaded files include **date in filename** for easy organization
 - Search results show **context** (50 characters before/after match)
 - **Match scores** help identify best results (⭐ exact, ✓ partial, ~ fuzzy)
@@ -212,14 +166,13 @@ cd genspark-rtl-toolbox
 
 ---
 
-## 🐛 Troubleshooting
+1. הורד או שכפל את התוסף.
+2. טען כתוסף בדפדפן דרך מצב מפתחים.
+3. השתמש בממשק להורדות ולחיפוש.
 
-### Common Issues
+## תצורה
 
-**Extension not working on Genspark.ai?**
-- Refresh the page after installing
-- Make sure you're on genspark.ai (not other domains)
-- Check if extension is enabled in Chrome
+ניתן להגדיר הגדרות ברירת מחדל ב-background.js.
 
 **Search not finding results?**
 - Make sure the conversation has loaded completely
@@ -259,19 +212,7 @@ cd genspark-rtl-toolbox
 
 ## 📋 Changelog
 
-### v2.5 (Current) - November 2024
-- ✅ **NEW: Conversation Manager** - Complete conversation management system:
-  - 💾 Save current conversation with one click
-  - 📚 View all saved conversations in organized list
-  - 🔗 Open saved conversations in new tabs
-  - 🗑️ Delete unwanted conversations
-  - 📦 Bulk download all saved conversations
-  - Persistent storage with chrome.storage.local
-  - Smart indexing with unique IDs
-- ✅ **Enhanced stats panel** - Now shows saved conversations count
-- ✅ **Improved UI** - New Conversation Manager section with intuitive controls
-
-### v2.4 - November 2024
+### v2.4 (Current) - November 2024
 - ✅ **Removed RTL algorithm** (simplified extension)
 - ✅ **Fixed download duplication** - no more 4x downloads!
 - ✅ **Added dual search modes**:

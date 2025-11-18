@@ -1,6 +1,6 @@
 /**
- * Genspark Conversation Manager v2.5 - Content Script
- * ניהול מתקדם של שיחות Genspark - הורדה, חיפוש, שמירה וניהול שיחות
+ * Genspark Conversation Manager v2.4 - Content Script
+ * ניהול מתקדם של שיחות Genspark - הורדה, חיפוש ושמירת שיחות
  */
 
 class GensparkRTLToolbox {
@@ -74,7 +74,7 @@ class GensparkRTLToolbox {
     async init() {
         if (this.isInitialized) return;
 
-        console.log('🚀 Genspark Conversation Manager v2.5 מתחיל...');
+        console.log('🚀 Genspark Conversation Manager v2.4 מתחיל...');
 
         // המתן לטעינת הדף
         if (document.readyState === 'loading') {
@@ -91,7 +91,7 @@ class GensparkRTLToolbox {
         this.setupMessageListeners();
         this.observeChanges();
 
-        console.log('✅ Genspark Conversation Manager v2.5 הופעל בהצלחה');
+        console.log('✅ Genspark Conversation Manager v2.4 הופעל בהצלחה');
     }
 
     // זיהוי הודעות עם סלקטורים מרובים
@@ -746,13 +746,6 @@ class GensparkRTLToolbox {
                     });
                     break;
 
-                case 'saveConversation':
-                    this.saveCurrentConversation()
-                        .then(result => sendResponse(result))
-                        .catch(error => sendResponse({ success: false, error: error.message }));
-                    return true; // Keep connection open for async response
-                    break;
-
                 case 'highlightMessage':
                     this.highlightMessage(request.index);
                     sendResponse({ success: true });
@@ -840,6 +833,6 @@ if (typeof window !== 'undefined') {
     // וודא שהתוסף לא רץ כבר
     if (!window.gensparkConversationManager) {
         window.gensparkConversationManager = new GensparkRTLToolbox();
-        console.log('🎯 Genspark Conversation Manager v2.5 אותחל');
+        console.log('🎯 Genspark Conversation Manager v2.4 אותחל');
     }
 }
